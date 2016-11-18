@@ -1,0 +1,192 @@
+Usage
+=====
+
+Call `do_it_nao.sh`. You also need the source files:
+* `sources/grammar.uig-v04.txt`
+* `sources/english.pertainyms.txt`
+* `sources/ni_leidos_terms.tsv`
+* `sources/ni_ngrams_cleaned.tsv`
+* `sources/ldc-lexicon`
+* `sources/uig-eng.masterlex.capomwn.1best.arab.flat`
+* `sources/yulghun.v1.uig-eng`
+* `sources/NameTranslation_V4and5.flat`
+* `sources/NameTranslation_Uncleaned_V2.flat`
+
+The python scripts in use at least `spacy`, you'll also have to install the English model (`python -m spacy.en.download all`).
+
+Changelog
+=========
+
+- v15 (2016-07-31):
+  * New NE translations from RPI.
+- v14 (2016-07-27):
+  * Use spacy.io's sentence splitting as additional step after the rudimentary
+    regex-splitting. This affects ~1% of entries - positively I think.
+  * POS tag inference for entries, using the english side, taking the POS tag
+    of the dependency head according to the spacy.io analysis.
+    Caution: a little noisy. Use with caution.
+  * Stemmed files using Ulf's regexes for NOUNs and VERBs specifically (that's
+    why I did the POS tag inference in the first place).
+    Caution: will probably over-generate entries. You have been warned.
+  * Normalization strips left-to-right markers.
+- v13 (2016-07-25):
+  * NFKC unicode normalization!
+  * Manually capitalize some UW masterlex entries with OMWN as only source...
+  * ...then only take 1-best result from UW masterlex.
+    Caution: both the lexicon name and the provenance indication in all_lexicons
+             changed, it no longer says "UW masterlex", but instead has the
+             sources indicated in the masterlex source file!
+  * Ulf's grammar v04. Changes nothing, since...
+  * ... sbmt-on-demand dict removed. Too early for that.
+  * Expansion: "'s" is added as separate token
+  * New "singleton" logic: "A B -> X Y" implies "A -> X" and "B -> Y".
+    Yes, this is way too lenient and more restrictions should make it more
+    accurate. But, does anybody have use for them anyway? Does anybody even read
+    this changelog anyway?
+  * Fix little bug in NI translation file (2 malformed TSV rows)
+- v12 (2016-07-19):
+  * Bugfix: NameTranslation_V3 was broken, fixed with RPIs V4.
+- v11 (2016-07-18):
+  * Bugfix: NE translations weren't included in all_lexicons.norm
+- v10 (2016-07-18):
+  * New NE translation lists from RPI.
+  * Removing lowercased alternatives never happened. Now it doesn't even happen
+    officially anymore.
+  * Supplying an experimental on-demand-dictionary that deriddles OOVs by
+    segmenting off suffixes from Ulfs grammar file.
+- v09 (2016-07-15):
+  * Fix: NI normalization is no longer nearly empty
+  * Fix: Yulghun-uig-eng-fromreversed is actually reversed again.
+- v08 (2016-07-15):
+  * Included NI translations of LEIDOS terms as "ni-translations" dictionary.
+  * No more .explain files.
+  * Fixed the unreversed yulghun-eng-uig appearing in all_lexicons.
+  * ~If a source word translates into two alternatives that only differ in case,
+    only the one with most upper case characters is used.~ (EDIT: this never 
+    actually happened)
+- v07 (2016-07-14):
+  * Include reverse yulghun-eng-uig dictionary!
+    Right now it's crunched the same way as all other dictionaries.
+    I also include a reversed file for your convenience - and to include it
+    in the all_lexicons file.
+  * Accent and control character stripping (everything is outputted as NFKD now)
+  * New splitting rules for targets - and for the first time for sources
+  * NE expansion using Ulf's v03 grammar (so, a few more suffixes)
+- v06 (2016-07-12):
+  * strip «CAT»egories and unsplit entries of the form
+    "meaning. 3 other meaning"
+- v05 (2016-07-12):
+  * no longer truncate the "to" preposition at the start of english entries
+    (thinking it is an infinitive form)
+- v04 (2016-07-12):
+  * NE expansion using Ulf's grammar file.
+- v03 (2016-07-10):
+  * Normalization fixes.
+  * Added .explanation files to show what normalization procedure does.
+
+History
+=======
+
+We used not only the LDC-provided dictionary (115k mined translation pairs), but also the Uyghur part of a massively multilingual dictionary provided by UW (masterlex, 3k pairs).
+Furthermore we scraped an online dictionary (\url{dict.yulghun.com}, given as a resource by LDC) in both the Uyghur$\rightarrow$English direction (44k pairs) and (after Checkpoint 1) English$\rightarrow$Uyghur, which we reversed to obtain more Uyghur$\rightarrow$English entries (80k pairs).
+Additionally, we included about 2k (that number increased to 4k during the evaluation period) manually translated \emph{named entities} from RPI and from Checkpoint 2 on around 0.5k english disaster-related terms translated by a native informant.
+
+The dictionaries were supplied to all participants as unnormalized dictionaries, normalized dictionaries (going through the procedure outlined above) as well as in the form of one big dictionary file of size 165k at CP1, 397k at CP2 and 578k at CP3.
+
+\subsection*{Checkpoint 1}
+
+We preprocessed all dictionaries, reducing and breaking apart target sides like "share, portion (e.g. one third)." into two translation pairs (normalized entries) with target sides "share" and "portion", respectively, as well as resolving references like "see <other word>" on the target side.
+
+\subsection*{Checkpoint 2}
+
+The dictionary processing pipeline now included special handling of combined Unicode characters (e.g. yeh with hamza above) to ensure consistency in all our resources as well as stripping of Umlauts and of control characters introduced by the scraping process.
+
+To increase our recall, we also began to \emph{expand} the list of NE translations by combining each source side of an entry with a list of known Uyghur suffixes (and their English translations on the target side, where applicable), thus yielding 101k (and eventually for CP3 195k) total NE translations.
+
+\subsection*{Checkpoint 3}
+
+We obtained noisy POS tags of Uyghur words in our normalized dictionaries by inferring a representative POS tag for the English side. This allowed us to stem many Uyghur entries using noun- and verb-specific suffix removal templates (yielding additional 132k entries on top of the unstemmed 446k entries).
+
+To further increase recall, we also added an experimental \emph{singleton} dictionary, that for each entry "$\text{source}_1 \text{source}_2 \ldots \text{source}_n \rightarrow \text{target}_1 \text{target}_2 \ldots \text{target}_n$" containing new entries "$\text{source}_i \rightarrow \text{target}_i$". This dictionary was not included in the big combined dictionary and only used by some systems.
+
+Apart from that, we mostly included incremental improvements, including manual fixing of some lowercased entries in the UW masterlex.
+
+Lessons learned:
+\begin{itemize}
+\item Even in the last few weeks, we still found entries in our dictionaries that were not normalized enough. More thorough examination of the entries in the beginning might have helped for earlier checkpoints.
+\item Unicode handling is important - and so is clear communication about which Unicode normal form to use, temporary confusion might have affected some systems for CP2.
+\end{itemize}
+
+
+Dictionaries
+============
+
+* LDC-provided dictionary       [lexicon]
+* UW masterlex                  [uig-eng.masterlex.flat.arab]
+* Yulghun scrape v1             [yulghun.v1.{uig-eng,uig-eng-fromreverse}]
+
+Resulting files
+---------------
+
+All dictionaries have three columns. The middle one is not used at all
+right now, it should only contain UNK.
+
+$dict:
+  - source dictionary
+$dict.norm:
+  - normalization applied
+$dict.norm.plussingletons:
+  - normalization applied,
+  - for each entry "AB CD -> xyz" the entries "AB -> xyz" and "CD -> xyz"
+    are added, if "AB" and "CD" do not already have translations
+
+
+Name translations
+=================
+
+* NEs V2 (NI-checked)           [NameTranslation_V2.flat]
+* NEs Unchecked                 [NameTranslation_Uncleaned.flat]
+
+Resulting files
+---------------
+
+Here the middle column indicates the NE category.
+
+$dict:
+  - flattened and joined list (duplicate-free)
+$dict.expanded:
+  - expanded list using Ulf's suffix list and the NE category, only using noun
+    suffixes with english translations and the "adjectivizers", and skipping
+    expansions that contain "in" or "on" when expanding people (as funny as the
+    results may be).
+
+Here is an excerpt of what happens to "XXXX -> GPE -> France":
+  XXXX	GPE	France
+  XXXXلىق	GPE	French
+  XXXXچە	GPE	French
+  XXXXغا	GPE	to France
+  XXXXغا	GPE	for France
+  XXXXدىن	GPE	from France
+  XXXXدىن	GPE	than France
+  XXXXدا	GPE	in France
+  XXXXدا	GPE	at France
+  XXXXدا	GPE	on France
+  XXXXتە	GPE	in France
+  XXXXتە	GPE	at France
+  XXXXتە	GPE	on France
+  XXXXدىكى	GPE	located in France
+  XXXXدىكى	GPE	located at France
+  XXXXدىكى	GPE	located on France
+  XXXXغىچە 	GPE	until France
+  XXXXغىچە 	GPE	up to France
+  XXXXغىچە 	GPE	as far as France
+  XXXXنىڭ	GPE	France's
+
+
+The all_lexicons file
+=====================
+
+...contains both all unnormalized dictionaries as well as the expanded NE lists.
+Here the middle column again indicates provenance, but for the NEs it indicates
+"<provenance>/<NE-category>".
+Normalization as applied to the "normal" dictionaries is included as well.
